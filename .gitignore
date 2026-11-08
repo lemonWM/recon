@@ -1,0 +1,19 @@
+# Secrets — never commit, in any folder
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules
+dist
+
+# macOS
+.DS_Store
+
+# HubSpot config file
+hubspot.config.yml
+
+# Large or generated media
+recon_video/*.mp4
+
+*.txt

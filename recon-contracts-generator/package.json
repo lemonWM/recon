@@ -1,0 +1,19 @@
+{
+	"name": "recon-contracts-generator",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Generates synthetic contracts, invoices and ground truth for Recon.",
+	"scripts": {
+		"contract": "node src/preview-contract.js",
+		"invoices": "node src/preview-invoices.js",
+		"push": "node src/push-invoices.js",
+		"pdfs": "node src/build-pdfs.js",
+		"findings": "node src/build-expected-findings.js"
+	},
+	"dependencies": {
+		"dotenv": "^18.0.8",
+		"pdfkit": "^0.20.2",
+		"pg": "^8.23.1"
+	}
+}

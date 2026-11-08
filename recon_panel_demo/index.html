@@ -1,0 +1,1013 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Recon app: deal list and deal detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+button,input{font:inherit}
+a{color:#1D4E89;text-decoration:none}a:hover{color:#12365F}
+.rc-row{background:#FFFFFF}
+.rc-row:hover{background:#F3F6F9}
+.rc-row.rc-on,.rc-row.rc-on:hover{background:#ECEEF1}
+input:focus,input:focus-visible{outline:none !important;border-color:#2F80ED !important;box-shadow:none !important}
+button:focus-visible,a:focus-visible{outline:2px solid #7FB2F0 !important;outline-offset:2px}
+.rc-scroll{scrollbar-width:none}
+.rc-scroll::-webkit-scrollbar{display:none}
+@keyframes rc-flip{0%{transform:scaleX(1);animation-timing-function:cubic-bezier(.47,0,.74,.71)}50%{transform:scaleX(0);animation-timing-function:cubic-bezier(.39,.58,.57,1)}100%{transform:scaleX(1)}}
+@keyframes rc-pulse{0%,100%{opacity:.3;transform:scale(.75)}50%{opacity:1;transform:scale(1.3)}}
+@keyframes rc-sync{0%,100%{opacity:.55;transform:scale(.94)}50%{opacity:1;transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){path,svg{animation:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column; background: #F3F5F7; font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif; color: #1D2730; font-size: 14px; line-height: 1.45">
+
+<div style="position: sticky; top: 0; z-index: 10; background: #1D2730; color: #FFFFFF">
+<div style="width: 100%; max-width: 1180px; margin: 0 auto; padding: 12px 16px; box-sizing: border-box; display: flex; gap: 12px; align-items: center; flex-wrap: wrap">
+<div style="font-weight: 600; letter-spacing: 0.02em">Recon</div>
+<div style="color: #AEB8C2; font-size: 12px">Bill what you signed.</div>
+<div role="group" aria-label="CRM source" style="margin-left: auto; display: inline-flex; border: 1px solid #3A4753; border-radius: 4px; overflow: hidden">
+<button type="button" onClick="{{pickHs}}" aria-pressed="{{srcHsOn}}" style="min-height: 24px; padding: 0 9px; font-size: 11px; font-weight: 500; border: 0; cursor: pointer; background: {{srcHsBg}}; color: {{srcHsFg}}">HubSpot</button>
+<button type="button" onClick="{{pickSf}}" aria-pressed="{{srcSfOn}}" style="min-height: 24px; padding: 0 9px; font-size: 11px; font-weight: 500; border: 0; border-left: 1px solid #3A4753; cursor: pointer; background: {{srcSfBg}}; color: {{srcSfFg}}">Salesforce</button>
+</div>
+</div>
+</div>
+
+<div style="flex: 1 0 auto; width: 100%; max-width: 1180px; margin: 0 auto; padding: 24px 16px; box-sizing: border-box">
+
+<sc-if value="{{showList}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+<div style="display: flex; gap: 2px; align-items: center">
+<svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="color: #1D2730">
+<path d="M4.5 12a7.5 7.5 0 0 1 11.1-6.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+<path d="M19.5 12a7.5 7.5 0 0 1-11.1 6.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+<path d="M12 7.4Q12.7 11.3 16.6 12 12.7 12.7 12 16.6 11.3 12.7 7.4 12 11.3 11.3 12 7.4Z" fill="{{accent}}" style="transform-box: fill-box; transform-origin: center; animation: rc-flip 2.8s infinite"></path>
+<path d="M19.6 1.8Q20 4 22.2 4.4 20 4.8 19.6 7 19.2 4.8 17 4.4 19.2 4 19.6 1.8Z" fill="currentColor"></path>
+</svg>
+<h1 style="margin: 0; font-size: 24px; font-weight: 600; line-height: 1.25">Recon</h1>
+</div>
+<div style="color: #4A5763; padding-bottom: 20px">Scans the invoices you issue against the contract on each won deal.</div>
+</div>
+<div style="display: flex; gap: 14px; align-items: center; justify-content: flex-end; flex-wrap: wrap">
+<sc-if value="{{syncShown}}" hint-placeholder-val="{{ true }}">
+<div role="status" aria-live="polite" style="display: inline-flex; gap: 6px; align-items: center; min-height: 36px; font-size: 12px; color: {{syncFg}}; opacity: {{syncOpacity}}; transition: opacity 0.3s ease">
+<sc-if value="{{syncing}}" hint-placeholder-val="{{ true }}">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="overflow: visible; color: {{accent}}; animation: rc-sync 1.4s ease-in-out infinite">
+<path d="M2.5 8a5.5 5.5 0 0 1 9.6-3.7M13.5 8a5.5 5.5 0 0 1-9.6 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+<path d="M12.3 1.8v2.7H9.6M3.7 14.2v-2.7h2.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</sc-if>
+<sc-if value="{{synced}}" hint-placeholder-val="{{ false }}">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+<circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"></circle>
+<path d="M5.4 8.2l1.8 1.8 3.4-3.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</sc-if>
+<span>{{syncLabel}}</span>
+</div>
+</sc-if>
+<button type="button" onClick="{{checkAll}}" disabled="{{listDisabled}}" style="min-width: 140px; justify-content: center; min-height: 36px; padding: 0 14px; font-size: 13px; border-radius: 4px; border: 1px solid {{listBg}}; background: {{listBg}}; color: #FFFFFF; font-weight: 500; cursor: {{listCursor}}; display: inline-flex; gap: 6px; align-items: center">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="overflow: visible">
+<path d="M7 2.5l1.3 3.7L12 7.5 8.3 8.8 7 12.5 5.7 8.8 2 7.5l3.7-1.3L7 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" style="fill: {{listFill}}; transform-box: fill-box; transform-origin: center; animation: {{listAnimA}}"></path>
+<path d="M12.5 1.5l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" style="fill: {{listFill}}; transform-box: fill-box; transform-origin: center; animation: {{listAnimB}}"></path>
+</svg>
+<span>{{listScanLabel}}</span>
+</button>
+</div>
+</div>
+
+<sc-if value="{{listNote}}" hint-placeholder-val="{{ false }}">
+<div style="background: #E5E9F8; color: #232F73; border-radius: 4px; padding: 12px 16px">{{listNoteText}}</div>
+</sc-if>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 12px">
+<div style="background: #FFFFFF; border: 1px solid #DCE2E8; border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 11px; color: #4A5763">To recover</div>
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 17px; font-weight: 600; color: {{accent}}">{{totalRecover}}</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #DCE2E8; border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 11px; color: #4A5763">Mismatches</div>
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 17px; font-weight: 500">{{totalMismatch}}</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #DCE2E8; border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 11px; color: #4A5763">Invoices scanned</div>
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 17px; font-weight: 500">{{totalChecked}}</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #DCE2E8; border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 11px; color: #4A5763">Contracts ready</div>
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 17px; font-weight: 500">{{contractsReady}}</div>
+</div>
+</div>
+
+<div style="background: #FFFFFF; border: 1px solid #DCE2E8; border-radius: 6px; overflow: hidden">
+<div style="padding: 12px 20px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap">
+<div style="font-weight: 600">Deals list</div>
+<div style="position: relative; flex: 0 0 130px; width: 130px">
+<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="position: absolute; left: 8px; top: 8px; color: #4A5763">
+<circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6"></circle>
+<path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+</svg>
+<input type="text" aria-label="Search deals" value="{{search}}" onChange="{{onSearch}}" placeholder="Search deals" style="width: 100%; box-sizing: border-box; height: 28px; padding: 0 8px 0 26px; font-size: 12px; border: 1px solid #B9C3CC; border-radius: 4px; background: #FFFFFF; color: #1D2730">
+</div>
+</div>
+<div class="rc-scroll" style="overflow-x: auto; scrollbar-width: none">
+<div style="min-width: 1100px">
+<div style="display: grid; grid-template-columns: minmax(250px, 2.2fr) minmax(160px, 1.3fr) minmax(120px, 0.9fr) minmax(140px, 1fr) minmax(190px, 1.4fr) minmax(150px, 1.1fr); column-gap: 12px; padding: 10px 20px; background: #F3F5F7; border-top: 1px solid #DCE2E8; font-size: 12px; font-weight: 600; color: #36424D; white-space: nowrap">
+<div>Deal</div>
+<div>Company</div>
+<div style="text-align: right">Invoices scanned</div>
+<div style="text-align: right; padding-right: 32px">To recover</div>
+<div>Contract</div>
+<div style="text-align: right">Status</div>
+</div>
+<sc-for list="{{deals}}" as="deal" hint-placeholder-count="5">
+<button type="button" class="rc-row" onClick="{{deal.open}}" style="display: grid; grid-template-columns: minmax(250px, 2.2fr) minmax(160px, 1.3fr) minmax(120px, 0.9fr) minmax(140px, 1fr) minmax(190px, 1.4fr) minmax(150px, 1.1fr); column-gap: 12px; align-items: center; width: 100%; box-sizing: border-box; padding: 0 20px; min-height: 46px; font-size: 13px; border: none; border-top: 1px solid #E3E8ED; text-align: left; color: #1D2730; cursor: pointer">
+<span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #1D4E89; font-weight: 500">{{deal.name}}</span>
+<span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{deal.company}}</span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace">{{deal.checkedText}}</span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-weight: {{deal.recoverWeight}}; color: #1D2730; padding-right: 32px">{{deal.recoverText}}</span>
+<span style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 13px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #36424D">{{deal.fileShort}}</span>
+<span style="text-align: right">
+<span style="display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; background: {{deal.tagBg}}; color: {{deal.tagFg}}; border: 1px solid {{deal.tagBorder}}">{{deal.tagLabel}}</span>
+</span>
+</button>
+</sc-for>
+<sc-if value="{{noDeals}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 16px 20px; border-top: 1px solid #E3E8ED; font-size: 13px; color: #4A5763">No deals match your search.</div>
+</sc-if>
+</div>
+</div>
+</div>
+
+</div>
+</sc-if>
+
+<sc-if value="{{showDetail}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 20px">
+
+<div>
+<button type="button" onClick="{{back}}" style="min-height: 24px; padding: 0 6px 0 0; border: none; background: transparent; color: #4A5763; font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; gap: 2px; align-items: center">
+<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+<path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>All deals</span>
+</button>
+</div>
+
+<div style="background: #FFFFFF; border: 1px solid #DCE2E8; border-radius: 6px; overflow: hidden">
+
+<div style="padding: 20px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+<div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
+<h1 style="margin: 0; font-size: 22px; font-weight: 600; line-height: 1.25">{{d.name}}</h1>
+<span style="display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; background: {{d.headBg}}; color: {{d.headFg}}; border: 1px solid {{d.headBorder}}">{{d.headLabel}}</span>
+</div>
+<div style="color: #4A5763">{{d.meta}}</div>
+<div>
+<a href="#" style="font-weight: 500; display: inline-flex; gap: 6px; align-items: center">
+<span>View this deal in CRM</span>
+<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+<path d="M5.5 2.5H3a1 1 0 00-1 1V11a1 1 0 001 1h7.5a1 1 0 001-1V8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M8 2h4v4M12 2L6.5 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</a>
+</div>
+</div>
+<sc-if value="{{dIsReady}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<button type="button" onClick="{{checkNow}}" disabled="{{scanDisabled}}" style="min-width: 140px; justify-content: center; min-height: 36px; padding: 0 14px; font-size: 13px; border-radius: 4px; border: 1px solid {{scanBg}}; background: {{scanBg}}; color: #FFFFFF; font-weight: 500; cursor: {{scanCursor}}; display: inline-flex; gap: 6px; align-items: center">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="overflow: visible">
+<path d="M7 2.5l1.3 3.7L12 7.5 8.3 8.8 7 12.5 5.7 8.8 2 7.5l3.7-1.3L7 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" style="fill: {{scanFill}}; transform-box: fill-box; transform-origin: center; animation: {{scanAnimA}}"></path>
+<path d="M12.5 1.5l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" style="fill: {{scanFill}}; transform-box: fill-box; transform-origin: center; animation: {{scanAnimB}}"></path>
+</svg>
+<span>{{checkLabel}}</span>
+</button>
+</div>
+</sc-if>
+</div>
+
+<sc-if value="{{banner}}" hint-placeholder-val="{{ false }}">
+<div style="background: #E5E9F8; color: #232F73; border-radius: 4px; padding: 12px 16px">{{bannerText}}</div>
+</sc-if>
+
+<sc-if value="{{dIsReady}}" hint-placeholder-val="{{ false }}">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 12px">
+<div style="border: 1px solid #DCE2E8; border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 11px; color: #4A5763">Invoices scanned</div>
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 17px; font-weight: 500">{{d.checkedText}}</div>
+</div>
+<div style="border: 1px solid #DCE2E8; border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 11px; color: #4A5763">Mismatches</div>
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 17px; font-weight: 500">{{d.mismatchText}}</div>
+</div>
+<div style="border: 1px solid #DCE2E8; border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 11px; color: #4A5763">To recover</div>
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 17px; font-weight: 600; color: {{d.recoverColor}}">{{d.recoverText}}</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{dIsNoContract}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 560px; padding: 12px 0">
+<div style="font-size: 18px; font-weight: 600">No contract on this deal yet</div>
+<div>Attach the signed contract to the deal as a PDF. Recon reads it on its own. After that its invoices are ready to scan.</div>
+<div style="font-size: 12px; color: #4A5763">One PDF per deal. That file is read as the contract.</div>
+<div>
+<button type="button" style="min-height: 36px; padding: 0 14px; font-size: 13px; border-radius: 4px; border: 1px solid #1D2730; background: #1D2730; color: #FFFFFF; font-weight: 500; cursor: pointer">Look for an attachment now</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{dIsFailed}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 560px; padding: 12px 0">
+<div style="font-size: 18px; font-weight: 600">The contract could not be read</div>
+<div><span style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace">{{d.file}}</span> looks like a scanned image with no text in it. Replace it on the deal with a text-based PDF. Recon reads the new file on its own.</div>
+<div style="font-size: 12px; color: #4A5763">Invoices cannot be scanned until the contract can be read.</div>
+</div>
+</sc-if>
+
+</div>
+
+</div>
+
+<sc-if value="{{dIsReady}}" hint-placeholder-val="{{ false }}">
+<div style="background: #FFFFFF; border: 1px solid #DCE2E8; border-radius: 6px; overflow: hidden">
+
+<div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #DCE2E8; flex-wrap: wrap">
+<div style="display: flex; gap: 24px; flex-wrap: wrap">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="2">
+<button type="button" onClick="{{t.pick}}" style="min-height: 48px; padding: 0; background: none; border: none; border-bottom: 2px solid {{t.line}}; color: {{t.color}}; font-weight: {{t.weight}}; cursor: pointer; display: inline-flex; gap: 6px; align-items: center">
+<sc-if value="{{t.ai}}" hint-placeholder-val="{{ false }}">
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+<path d="M7 2.5l1.3 3.7L12 7.5 8.3 8.8 7 12.5 5.7 8.8 2 7.5l3.7-1.3L7 2.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"></path>
+<path d="M12.5 1.5l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"></path>
+</svg>
+</sc-if>
+<span>{{t.label}}</span>
+</button>
+</sc-for>
+</div>
+<sc-if value="{{showInvoices}}" hint-placeholder-val="{{ true }}">
+<div style="position: relative; flex: 0 0 130px; width: 130px; margin: 10px 0">
+<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="position: absolute; left: 8px; top: 8px; color: #4A5763">
+<circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6"></circle>
+<path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+</svg>
+<input type="text" aria-label="Search invoices" value="{{invSearch}}" onChange="{{onInvSearch}}" placeholder="Search invoices" style="width: 100%; box-sizing: border-box; height: 28px; padding: 0 8px 0 26px; font-size: 12px; border: 1px solid #B9C3CC; border-radius: 4px; background: #FFFFFF; color: #1D2730">
+</div>
+</sc-if>
+</div>
+
+<sc-if value="{{showInvoices}}" hint-placeholder-val="{{ true }}">
+<div>
+
+<div style="display: flex; gap: 8px; padding: 16px 20px; flex-wrap: wrap">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="5">
+<button type="button" onClick="{{f.pick}}" style="min-height: 32px; padding: 0 10px; border-radius: 999px; border: 1px solid {{f.border}}; background: {{f.bg}}; color: {{f.fg}}; font-size: 12px; font-weight: 500; cursor: pointer; display: flex; gap: 6px; align-items: center">
+<span>{{f.label}}</span>
+<span style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 11px">{{f.count}}</span>
+</button>
+</sc-for>
+</div>
+
+<div class="rc-scroll" style="overflow-x: auto; scrollbar-width: none">
+<div style="min-width: 720px">
+<div style="display: grid; grid-template-columns: minmax(130px, 1.3fr) minmax(90px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(130px, 1.2fr) minmax(150px, 1.3fr); column-gap: 12px; padding: 10px 20px; background: #F3F5F7; border-top: 1px solid #DCE2E8; font-size: 12px; font-weight: 600; color: #36424D">
+<div>Invoice</div>
+<div>Period</div>
+<div style="text-align: right">Invoiced</div>
+<div style="text-align: right">Expected</div>
+<div style="text-align: right">Difference</div>
+<div style="text-align: right">Status</div>
+</div>
+<sc-for list="{{rows}}" as="row" hint-placeholder-count="10">
+<button type="button" class="{{row.cls}}" onClick="{{row.pick}}" style="display: grid; grid-template-columns: minmax(130px, 1.3fr) minmax(90px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(130px, 1.2fr) minmax(150px, 1.3fr); column-gap: 12px; align-items: center; width: 100%; box-sizing: border-box; padding: 0 20px; min-height: 44px; font-size: 13px; border: none; border-top: 1px solid #E3E8ED; text-align: left; color: #1D2730; cursor: pointer; background: {{row.bg}}">
+<span style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-weight: 500; color: #1D4E89">{{row.number}}</span>
+<span>{{row.period}}</span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace">{{row.invoiced}}</span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; color: #36424D">{{row.expected}}</span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-weight: {{row.diffWeight}}; color: {{row.diffColor}}">{{row.diff}}</span>
+<span style="text-align: right">
+<span style="display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; background: {{row.tagBg}}; color: {{row.tagFg}}; border: 1px solid {{row.tagBorder}}">{{row.tagLabel}}</span>
+</span>
+</button>
+</sc-for>
+<sc-if value="{{noRows}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 20px; border-top: 1px solid #E3E8ED; color: #4A5763">{{noRowsText}}</div>
+</sc-if>
+</div>
+</div>
+
+<sc-if value="{{hasPages}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 20px 20px 10px; border-top: 1px solid #E3E8ED; font-size: 12px; color: #4A5763">
+<div>{{pageInfo}}</div>
+<div style="display: flex; gap: 4px; align-items: center">
+<button type="button" onClick="{{prevPage}}" disabled="{{prevDisabled}}" aria-label="Previous page" style="width: 28px; height: 28px; padding: 0; border-radius: 4px; border: 1px solid #B9C3CC; background: #FFFFFF; color: {{prevColor}}; cursor: {{prevCursor}}; display: inline-flex; align-items: center; justify-content: center">
+<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+<path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<sc-for list="{{pages}}" as="pg" hint-placeholder-count="3">
+<button type="button" onClick="{{pg.pick}}" aria-label="Page {{pg.label}}" style="min-width: 28px; height: 28px; padding: 0 6px; border-radius: 4px; border: 1px solid {{pg.border}}; background: {{pg.bg}}; color: {{pg.fg}}; font-size: 12px; font-weight: 500; cursor: pointer">{{pg.label}}</button>
+</sc-for>
+<button type="button" onClick="{{nextPage}}" disabled="{{nextDisabled}}" aria-label="Next page" style="width: 28px; height: 28px; padding: 0; border-radius: 4px; border: 1px solid #B9C3CC; background: #FFFFFF; color: {{nextColor}}; cursor: {{nextCursor}}; display: inline-flex; align-items: center; justify-content: center">
+<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+<path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{hasSel}}" hint-placeholder-val="{{ false }}">
+<div style="border-top: 1px solid #DCE2E8; background: #FAFBFC; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+
+<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap">
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 16px; font-weight: 600">{{sel.number}}</div>
+<div style="color: #4A5763">{{sel.period}}</div>
+<span style="display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; background: {{sel.tagBg}}; color: {{sel.tagFg}}; border: 1px solid {{sel.tagBorder}}">{{sel.tagLabel}}</span>
+</div>
+
+<sc-if value="{{selIsMismatch}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<div style="font-size: 15px">Billed at the 2025 monthly fee. The 4% increase due from 1 January 2026 was not applied.</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 12px; color: #4A5763">Invoiced</div>
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 16px">€5,000.00</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 12px; color: #4A5763">Expected under the contract</div>
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 16px">€5,200.00</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 12px; color: #4A5763">Difference</div>
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 16px; font-weight: 600; color: {{accent}}">−€200.00</div>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; font-weight: 600; color: #36424D">Contract basis</div>
+<div style="display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; background: #F0F3F6; border-radius: 4px; padding: 12px 14px">
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-weight: 600">§4.1</div>
+<div>The Customer shall pay a Monthly Fee of EUR 5,000.00 for the Services, invoiced monthly in arrears.</div>
+</div>
+<div style="display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; background: #F0F3F6; border-radius: 4px; padding: 12px 14px">
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-weight: 600">§4.2</div>
+<div>With effect from 1 January of each calendar year, the Monthly Fee shall be increased by four percent (4%) over the Monthly Fee applicable in the preceding calendar year.</div>
+</div>
+<div style="font-size: 12px; color: #4A5763">{{d.file}} · page 3 · contract version in force on the invoice date</div>
+</div>
+<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid #DCE2E8; padding-top: 14px">
+<div>Ticket <span style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace">{{sel.ticket}}</span> · {{sel.ticketStatus}}</div>
+<a href="#" style="font-weight: 500">Open ticket</a>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{selIsCompliant}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 15px">Matches the contract. The monthly fee in force on the invoice date is {{sel.expected}}.</div>
+<div style="font-size: 12px; color: #4A5763">{{d.file}} · contract version in force on the invoice date</div>
+</div>
+</sc-if>
+
+<sc-if value="{{selIsNoBasis}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 15px">One line has no basis in the contract.</div>
+<div>The invoice includes “Additional user licences (12)” for €480.00. The contract has no clause that sets a price for additional users, so Recon can neither confirm nor dispute this line. The base fee of €5,200.00 matches §4.1 and §4.2.</div>
+<div style="border-top: 1px solid #DCE2E8; padding-top: 14px; color: #36424D">No ticket was created. This line needs a person to decide.</div>
+</div>
+</sc-if>
+
+<sc-if value="{{selIsUnchecked}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 15px">Not scanned yet. Use the Scan button to scan it against the contract.</div>
+</sc-if>
+
+<sc-if value="{{selIsChecking}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 15px">Scanning this invoice against the contract now.</div>
+</sc-if>
+
+</div>
+</sc-if>
+
+</div>
+</sc-if>
+
+<sc-if value="{{showAsk}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 20px; display: flex; flex-direction: column; gap: 16px">
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+<svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+<path d="M7 2.5l1.3 3.7L12 7.5 8.3 8.8 7 12.5 5.7 8.8 2 7.5l3.7-1.3L7 2.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"></path>
+<path d="M12.5 1.5l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"></path>
+</svg>
+<label for="recon-q" style="font-weight: 600">Ask AI about this contract</label>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<input id="recon-q" type="text" value="{{q}}" onChange="{{onQ}}" placeholder="What is the notice period?" style="flex: 1 1 280px; min-width: 0; min-height: 36px; box-sizing: border-box; padding: 0 10px; font-size: 13px; border: 1px solid #8C99A5; border-radius: 4px; background: #FFFFFF; color: #1D2730">
+<button type="button" onClick="{{ask}}" style="min-width: 96px; min-height: 36px; padding: 0 14px; font-size: 13px; border-radius: 4px; border: 1px solid #1D2730; background: #1D2730; color: #FFFFFF; font-weight: 500; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; justify-content: center">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="overflow: visible">
+<path d="M7 2.5l1.3 3.7L12 7.5 8.3 8.8 7 12.5 5.7 8.8 2 7.5l3.7-1.3L7 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" style="fill: {{aiFill}}; transform-box: fill-box; transform-origin: center; animation: {{aiAnimA}}"></path>
+<path d="M12.5 1.5l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" style="fill: {{aiFill}}; transform-box: fill-box; transform-origin: center; animation: {{aiAnimB}}"></path>
+</svg>
+<span>{{askLabel}}</span>
+</button>
+</div>
+<div style="font-size: 12px; color: #4A5763">AI answers come only from this contract and always cite the clause. Recon changes nothing in the CRM.</div>
+</div>
+
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<sc-for list="{{samples}}" as="s" hint-placeholder-count="3">
+<button type="button" onClick="{{s.pick}}" style="min-height: 32px; padding: 0 10px; font-size: 12px; border-radius: 999px; border: 1px solid #B9C3CC; background: #FFFFFF; color: #1D2730; cursor: pointer">{{s.text}}</button>
+</sc-for>
+</div>
+
+<sc-if value="{{hasAnswer}}" hint-placeholder-val="{{ false }}">
+<div style="border: 1px solid #DCE2E8; border-radius: 4px; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: #FAFBFC">
+<div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
+<span style="display: inline-flex; gap: 4px; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: #1D2730; color: #FFFFFF">
+<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="overflow: visible">
+<path d="M7 2.5l1.3 3.7L12 7.5 8.3 8.8 7 12.5 5.7 8.8 2 7.5l3.7-1.3L7 2.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" style="fill: {{aiFill}}; transform-box: fill-box; transform-origin: center; animation: {{aiAnimA}}"></path>
+<path d="M12.5 1.5l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" style="fill: {{aiFill}}; transform-box: fill-box; transform-origin: center; animation: {{aiAnimB}}"></path>
+</svg>
+<span>{{aiTagLabel}}</span>
+</span>
+<div style="color: #4A5763">{{asked}}</div>
+</div>
+
+<sc-if value="{{asking}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 15px; color: #36424D">Reading the contract and writing an answer.</div>
+</sc-if>
+
+<sc-if value="{{ansIndex}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 15px">Every 1 January. The Monthly Fee goes up by 4% over the fee that applied in the previous calendar year.</div>
+<div style="display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; background: #F0F3F6; border-radius: 4px; padding: 12px 14px">
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-weight: 600">§4.2</div>
+<div>With effect from 1 January of each calendar year, the Monthly Fee shall be increased by four percent (4%) over the Monthly Fee applicable in the preceding calendar year.</div>
+</div>
+<div style="font-size: 12px; color: #4A5763">{{d.file}} · page 3</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ansNotice}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 15px">Ninety days, in writing. The notice has to run out at the end of a calendar month.</div>
+<div style="display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; background: #F0F3F6; border-radius: 4px; padding: 12px 14px">
+<div style="font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-weight: 600">§9.1</div>
+<div>Either party may terminate this Agreement by giving the other party not less than ninety (90) days' written notice, such notice to expire at the end of a calendar month.</div>
+</div>
+<div style="font-size: 12px; color: #4A5763">{{d.file}} · page 6</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ansUnknown}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 15px">I could not find a clause in this contract that answers this.</div>
+<div style="color: #36424D">Recon answers only from the contract text, and nothing in {{d.file}} covers this question.</div>
+</div>
+</sc-if>
+
+</div>
+</sc-if>
+
+</div>
+</sc-if>
+
+</div>
+</sc-if>
+
+</div>
+</sc-if>
+
+</div>
+<div style="background: #1D2730; color: #C9D2DA; font-size: 11px">
+<div style="width: 100%; max-width: 1180px; margin: 0 auto; padding: 6px 16px; box-sizing: border-box; display: flex; gap: 12px; align-items: center; flex-wrap: wrap">
+<div>Created by arturchochla</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1F6FD6","options":["#1F6FD6","#2F80ED","#1A5FB4"]},"startScreen":{"editor":"enum","options":["Deal list","Deal detail"],"default":"Deal list"},"$preview":{"width":1360,"height":1620}}'>
+class Component extends DCLogic {
+  getView() {
+    var startDetail = (this.props.startScreen ?? 'Deal list') === 'Deal detail';
+    var defaults = {
+      screen: startDetail ? 'detail' : 'list',
+      dealId: 'd1',
+      tab: 'invoices',
+      filter: 'all',
+      selected: '',
+      page: 1,
+      search: '',
+      invSearch: '',
+      queue: [],
+      scanned: [],
+      syncing: true,
+      syncNote: 'on',
+      source: 'hubspot',
+      q: '',
+      asked: '',
+      answer: 'none',
+      asking: false
+    };
+    return Object.assign(defaults, this.state || {});
+  }
+
+  componentDidMount() {
+    this.startSync();
+  }
+
+  componentWillUnmount() {
+    if (this._timer) clearTimeout(this._timer);
+    if (this._askTimer) clearTimeout(this._askTimer);
+    if (this._syncTimer) clearTimeout(this._syncTimer);
+    this._syncStarted = false;
+  }
+
+  // On opening the app Recon asks the CRM for the current deal list.
+  // Here it is only simulated with a short wait.
+  startSync() {
+    var self = this;
+    if (this._syncStarted || !this.getView().syncing) return;
+    this._syncStarted = true;
+    this._syncTimer = setTimeout(function () {
+      self.setState({ syncing: false });
+      // "Up to date" stays for 2 seconds, fades out, then leaves the page.
+      self._syncTimer = setTimeout(function () {
+        self.setState({ syncNote: 'fading' });
+        self._syncTimer = setTimeout(function () {
+          self.setState({ syncNote: 'off' });
+        }, 300);
+      }, 2000);
+    }, 4000);
+  }
+
+  startScan(numbers) {
+    var view = this.getView();
+    if (view.queue.length > 0 || numbers.length === 0) return;
+    this.setState({ queue: numbers });
+    this.scanNext();
+  }
+
+  scanNext() {
+    var self = this;
+    this._timer = setTimeout(function () {
+      var view = self.getView();
+      if (view.queue.length === 0) return;
+      var done = view.queue[0];
+      var rest = view.queue.slice(1);
+      self.setState({ queue: rest, scanned: view.scanned.concat([done]) });
+      if (rest.length > 0) self.scanNext();
+    }, 3000);
+  }
+
+  // Each CRM is a separate source. Switching shows only that CRM's deals.
+  pickSource(source) {
+    if (this.getView().source === source) return;
+    if (this._timer) clearTimeout(this._timer);
+    if (this._askTimer) clearTimeout(this._askTimer);
+    if (this._syncTimer) clearTimeout(this._syncTimer);
+    this._syncStarted = false;
+    this.setState({
+      source: source, screen: 'list', dealId: '', tab: 'invoices', filter: 'all', selected: '',
+      page: 1, search: '', invSearch: '', queue: [], q: '', asked: '', answer: 'none',
+      asking: false, syncing: true, syncNote: 'on'
+    });
+  }
+
+  renderVals() {
+    var self = this;
+    var st = this.getView();
+    this.startSync();
+    var accent = this.props.accent ?? '#1F6FD6';
+    var months = ['Oct', 'Sep', 'Aug', 'Jul', 'Jun', 'May', 'Apr', 'Mar', 'Feb', 'Jan'];
+    var current = st.queue.length > 0 ? st.queue[0] : '';
+    var queueActive = st.queue.length > 0;
+
+    var tagStyles = {
+      ready: { tagLabel: 'Ready to scan', tagBg: '#FFFFFF', tagFg: '#4A5763', tagBorder: '#B9C3CC' },
+      scanning: { tagLabel: 'Scanning…', tagBg: '#DFF3E6', tagFg: '#1B6B3A', tagBorder: '#DFF3E6' },
+      compliant: { tagLabel: 'Compliant', tagBg: '#E1EDFC', tagFg: '#1A5FB4', tagBorder: '#E1EDFC' },
+      mismatch: { tagLabel: 'Mismatch', tagBg: '#FDE6DF', tagFg: '#B03A1E', tagBorder: '#FDE6DF' },
+      nobasis: { tagLabel: 'No contract basis', tagBg: '#E8ECEF', tagFg: '#36424D', tagBorder: '#E8ECEF' }
+    };
+
+    function aiIcon(busy) {
+      return {
+        fill: busy ? 'currentColor' : 'none',
+        animA: busy ? 'rc-pulse 1.2s ease-in-out infinite' : 'none',
+        animB: busy ? 'rc-pulse 1.2s ease-in-out 0.45s infinite' : 'none'
+      };
+    }
+
+    var haldenStatuses = ['ready', 'nobasis', 'compliant', 'compliant', 'compliant', 'compliant', 'compliant', 'mismatch', 'mismatch', 'mismatch'];
+    var haldenTickets = { 7: ['#1042', 'New'], 8: ['#1041', 'New'], 9: ['#1040', 'In review'] };
+
+    function buildRows(dealId) {
+      var built = months.map(function (m, i) {
+        var seq = 10 - i;
+        var pad = seq < 10 ? '0' + seq : '' + seq;
+        var fee = '€3,400.00';
+        var row;
+        if (dealId === 'd1') {
+          fee = '€5,200.00';
+          var status = haldenStatuses[i];
+          row = { number: 'INV-2026-0' + pad, period: m + ' 2026', status: status, invoiced: fee, expected: '—', diff: '—' };
+          if (status === 'nobasis') row.invoiced = '€5,680.00';
+          if (status === 'mismatch') {
+            row.invoiced = '€5,000.00';
+            row.expected = fee;
+            row.diff = '−€200.00';
+            row.ticket = haldenTickets[i][0];
+            row.ticketStatus = haldenTickets[i][1];
+          }
+        } else if (dealId === 'd3' || dealId === 's2') {
+          fee = dealId === 'd3' ? '€1,950.00' : '€2,750.00';
+          row = { number: 'INV-2026-' + (dealId === 'd3' ? '2' : '4') + pad, period: m + ' 2026', status: i >= 6 ? 'compliant' : 'ready', invoiced: fee, expected: '—', diff: '—' };
+        } else {
+          if (dealId === 's1') fee = '€4,100.00';
+          row = { number: 'INV-2026-' + (dealId === 's1' ? '3' : '1') + pad, period: m + ' 2026', status: 'compliant', invoiced: fee, expected: '—', diff: '—' };
+        }
+        if (row.status === 'ready') {
+          if (st.scanned.indexOf(row.number) !== -1) row.status = 'compliant';
+          else if (row.number === current) row.status = 'scanning';
+        }
+        if (row.status === 'compliant') {
+          row.expected = fee;
+          row.diff = '€0.00';
+        }
+        Object.assign(row, tagStyles[row.status]);
+        row.diffWeight = row.status === 'mismatch' ? '600' : '400';
+        row.diffColor = row.status === 'mismatch' ? accent : '#36424D';
+        return row;
+      });
+      if (dealId === 'd1') {
+        // The contract started in January 2025, so there is a full earlier year at the old fee.
+        ['Dec', 'Nov', 'Oct', 'Sep', 'Aug', 'Jul', 'Jun', 'May', 'Apr', 'Mar', 'Feb', 'Jan'].forEach(function (m, i) {
+          var seq = 12 - i;
+          var older = {
+            number: 'INV-2025-0' + (seq < 10 ? '0' + seq : '' + seq),
+            period: m + ' 2025',
+            status: 'compliant',
+            invoiced: '€5,000.00',
+            expected: '€5,000.00',
+            diff: '€0.00',
+            diffWeight: '400',
+            diffColor: '#36424D'
+          };
+          Object.assign(older, tagStyles.compliant);
+          built.push(older);
+        });
+      }
+      if (dealId === 'd2') {
+        // One extra invoice, so this deal shows a second page too.
+        var extra = {
+          number: 'INV-2025-112',
+          period: 'Dec 2025',
+          status: 'compliant',
+          invoiced: '€3,400.00',
+          expected: '€3,400.00',
+          diff: '€0.00',
+          diffWeight: '400',
+          diffColor: '#36424D'
+        };
+        Object.assign(extra, tagStyles.compliant);
+        built.push(extra);
+      }
+      return built;
+    }
+
+    function countOf(rows, status) {
+      return rows.filter(function (r) { return r.status === status; }).length;
+    }
+
+    function readyNumbers(rows) {
+      return rows.filter(function (r) { return r.status === 'ready'; })
+        .map(function (r) { return r.number; })
+        .reverse();
+    }
+
+    var sfDefs = [
+      { id: 's1', kind: 'indexed', name: 'Northgate Dental · Practice suite', company: 'Northgate Dental Group', file: 'MSA-2025-207.pdf', clauses: 12 },
+      { id: 's2', kind: 'indexed', name: 'Vireo Logistics · Route planning licence', company: 'Vireo Logistics BV', file: 'LA-2026-018.pdf', clauses: 8 },
+      { id: 's3', kind: 'nocontract', name: 'Castellan Hotels · Booking engine', company: 'Castellan Hotels SA', file: '', clauses: 0 }
+    ];
+    var hsDefs = [
+      { id: 'd1', kind: 'indexed', name: 'Halden Freight · Platform subscription', company: 'Halden Freight Ltd', file: 'MSA-2025-014.pdf', clauses: 14 },
+      { id: 'd2', kind: 'indexed', name: 'Brightwater Clinics · Support', company: 'Brightwater Clinics', file: 'SA-2024-031.pdf', clauses: 9 },
+      { id: 'd3', kind: 'indexed', name: 'Ostrava Tooling · Fleet tracking licence', company: 'Ostrava Tooling s.r.o.', file: 'LA-2026-002.pdf', clauses: 11 },
+      { id: 'd4', kind: 'nocontract', name: 'Kessler & Byrne · Data room hosting', company: 'Kessler & Byrne LLP', file: '', clauses: 0 },
+      { id: 'd5', kind: 'failed', name: 'Lumen Retail · Loyalty platform', company: 'Lumen Retail Group', file: 'LRG-agreement-scan.pdf', clauses: 0 }
+    ];
+    var dealDefs = st.source === 'salesforce' ? sfDefs : hsDefs;
+
+    var totalScanned = 0;
+    var totalMismatch = 0;
+    var contractsRead = 0;
+    var totalInvoices = 0;
+    var allReady = [];
+
+    var deals = dealDefs.map(function (def) {
+      var deal = Object.assign({}, def);
+      deal.fileShort = def.file || '—';
+      deal.rows = [];
+      deal.ready = [];
+      deal.busy = false;
+      if (def.kind === 'indexed') {
+        var rows = buildRows(def.id);
+        var readyCount = countOf(rows, 'ready');
+        var scanningCount = countOf(rows, 'scanning');
+        var mismatchCount = countOf(rows, 'mismatch');
+        var scannedCount = rows.length - readyCount - scanningCount;
+        deal.rows = rows;
+        deal.ready = readyNumbers(rows);
+        deal.busy = scanningCount > 0;
+        deal.checkedText = scannedCount + ' of ' + rows.length;
+        deal.mismatchText = String(mismatchCount);
+        deal.recoverText = mismatchCount > 0 ? '€600.00' : '€0.00';
+        deal.hasRecover = mismatchCount > 0;
+        deal.meta = def.company + ' · ' + def.file + ' · ' + def.clauses + ' clauses';
+        totalScanned += scannedCount;
+        totalMismatch += mismatchCount;
+        contractsRead += 1;
+        totalInvoices += rows.length;
+        allReady = allReady.concat(deal.ready);
+        if (scanningCount > 0) {
+          deal.tagLabel = 'Scanning…'; deal.tagBg = '#DFF3E6'; deal.tagFg = '#1B6B3A'; deal.tagBorder = '#DFF3E6';
+        } else if (mismatchCount > 0) {
+          deal.tagLabel = mismatchCount + ' mismatches'; deal.tagBg = '#FDE6DF'; deal.tagFg = '#B03A1E'; deal.tagBorder = '#FDE6DF';
+        } else if (readyCount > 0) {
+          deal.tagLabel = 'Ready to scan'; deal.tagBg = '#FFFFFF'; deal.tagFg = '#4A5763'; deal.tagBorder = '#B9C3CC';
+        } else {
+          deal.tagLabel = 'All compliant'; deal.tagBg = '#E1EDFC'; deal.tagFg = '#1A5FB4'; deal.tagBorder = '#E1EDFC';
+        }
+      } else {
+        deal.checkedText = '—';
+        deal.mismatchText = '—';
+        deal.recoverText = '—';
+        deal.hasRecover = false;
+        if (def.kind === 'failed') {
+          deal.meta = def.company + ' · ' + def.file;
+          deal.tagLabel = 'Contract unreadable'; deal.tagBg = '#36424D'; deal.tagFg = '#FFFFFF'; deal.tagBorder = '#36424D';
+        } else {
+          deal.meta = def.company + ' · no PDF attached to the deal';
+          deal.tagLabel = 'No contract'; deal.tagBg = '#E8ECEF'; deal.tagFg = '#36424D'; deal.tagBorder = '#E8ECEF';
+        }
+      }
+      deal.headLabel = deal.tagLabel;
+      deal.headBg = deal.tagBg;
+      deal.headFg = deal.tagFg;
+      deal.headBorder = deal.tagBorder;
+      deal.recoverWeight = deal.hasRecover ? '600' : '400';
+      deal.recoverColor = deal.hasRecover ? accent : '#1D2730';
+      deal.open = function () {
+        if (self._askTimer) clearTimeout(self._askTimer);
+        self.setState({ screen: 'detail', dealId: def.id, tab: 'invoices', filter: 'all', selected: '', page: 1, invSearch: '', q: '', asked: '', answer: 'none', asking: false });
+      };
+      return deal;
+    });
+
+    var d = deals.filter(function (x) { return x.id === st.dealId; })[0] || deals[0];
+    var isReady = d.kind === 'indexed';
+
+    var selectedId = st.selected;
+    var all = d.rows.map(function (r) {
+      var row = Object.assign({}, r);
+      row.cls = r.number === selectedId ? 'rc-row rc-on' : 'rc-row';
+      row.bg = r.number === selectedId ? '#ECEEF1' : '';
+      row.pick = function () { self.setState({ selected: r.number === selectedId ? '' : r.number }); };
+      return row;
+    });
+
+    var invTerm = (st.invSearch || '').trim().toLowerCase();
+    var searched = all.filter(function (r) {
+      if (!invTerm) return true;
+      var hay = (r.number + ' ' + r.period + ' ' + r.tagLabel + ' ' + r.invoiced + ' ' + r.expected + ' ' + r.diff).toLowerCase();
+      return hay.indexOf(invTerm) !== -1;
+    });
+
+    var filterDefs = [
+      { id: 'all', label: 'All', count: searched.length },
+      { id: 'mismatch', label: 'Mismatch', count: countOf(searched, 'mismatch') },
+      { id: 'nobasis', label: 'No contract basis', count: countOf(searched, 'nobasis') },
+      { id: 'compliant', label: 'Compliant', count: countOf(searched, 'compliant') },
+      { id: 'ready', label: 'Ready to scan', count: countOf(searched, 'ready') + countOf(searched, 'scanning') }
+    ];
+    var filters = filterDefs.map(function (f) {
+      var on = f.id === st.filter;
+      return {
+        label: f.label,
+        count: String(f.count),
+        bg: on ? '#1D2730' : '#FFFFFF',
+        fg: on ? '#FFFFFF' : '#1D2730',
+        border: on ? '#1D2730' : '#B9C3CC',
+        pick: function () { self.setState({ filter: f.id, selected: '', page: 1 }); }
+      };
+    });
+
+    var filtered = searched.filter(function (r) {
+      if (st.filter === 'all') return true;
+      if (st.filter === 'ready') return r.status === 'ready' || r.status === 'scanning';
+      return r.status === st.filter;
+    });
+
+    var pageSize = 10;
+    var pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+    var page = Math.min(Math.max(1, st.page || 1), pageCount);
+    var pageStart = (page - 1) * pageSize;
+    var rows = filtered.slice(pageStart, pageStart + pageSize);
+    var pages = [];
+    for (var pn = 1; pn <= pageCount; pn++) {
+      pages.push((function (n) {
+        var on = n === page;
+        return {
+          label: String(n),
+          bg: on ? '#1D2730' : '#FFFFFF',
+          fg: on ? '#FFFFFF' : '#1D2730',
+          border: on ? '#1D2730' : '#B9C3CC',
+          pick: function () { self.setState({ page: n, selected: '' }); }
+        };
+      })(pn));
+    }
+
+    var emptySel = { number: '', period: '', status: '', expected: '', tagLabel: '', tagBg: '#FFFFFF', tagFg: '#1D2730', tagBorder: '#FFFFFF' };
+    var sel = rows.filter(function (r) { return r.number === selectedId; })[0] || emptySel;
+    var hasSel = sel !== emptySel;
+
+    var tabDefs = [
+      { id: 'invoices', label: 'Invoices' },
+      { id: 'ask', label: 'Ask the contract' }
+    ];
+    var tabs = tabDefs.map(function (t) {
+      var on = t.id === st.tab;
+      return {
+        label: t.label,
+        ai: t.id === 'ask',
+        line: on ? '#1D2730' : 'transparent',
+        color: on ? '#1D2730' : '#4A5763',
+        weight: on ? '600' : '400',
+        pick: function () { self.setState({ tab: t.id }); }
+      };
+    });
+
+    var sampleDefs = [
+      { key: 'index', text: 'When can we raise the price?' },
+      { key: 'notice', text: 'What is the notice period?' },
+      { key: 'unknown', text: 'Is there a volume discount?' }
+    ];
+    var samples = sampleDefs.map(function (s) {
+      return {
+        text: s.text,
+        pick: function () { startAsk(s.text, s.key); }
+      };
+    });
+
+    function startAsk(text, key) {
+      if (self.getView().asking) return;
+      if (self._askTimer) clearTimeout(self._askTimer);
+      self.setState({ q: text, asked: text, answer: 'none', asking: true });
+      self._askTimer = setTimeout(function () {
+        self.setState({ asking: false, answer: key });
+      }, 10000);
+    }
+
+    function scanLabel(count) {
+      if (count === 0) return 'Nothing to scan';
+      return count === 1 ? 'Scan 1 invoice' : 'Scan ' + count + ' invoices';
+    }
+
+    var dealCanScan = !queueActive && isReady && d.ready.length > 0;
+    var dealBusy = d.busy;
+    var listCanScan = !queueActive && !st.syncing && allReady.length > 0;
+    var scanIcon = aiIcon(dealBusy);
+    var listIcon = aiIcon(queueActive);
+    var askIcon = aiIcon(st.asking);
+
+    var onList = st.screen === 'list';
+    var term = (st.search || '').trim().toLowerCase();
+    var visibleDeals = deals.filter(function (x) {
+      if (!term) return true;
+      var hay = (x.name + ' ' + x.company + ' ' + x.file + ' ' + x.tagLabel).toLowerCase();
+      return hay.indexOf(term) !== -1;
+    });
+
+    return {
+      accent: accent,
+      showList: onList,
+      showDetail: !onList,
+      deals: visibleDeals,
+      noDeals: visibleDeals.length === 0,
+      search: st.search,
+      onSearch: function (e) { self.setState({ search: e.target.value }); },
+      totalChecked: totalScanned + ' of ' + totalInvoices,
+      totalMismatch: String(totalMismatch),
+      totalRecover: totalMismatch > 0 ? '€600.00' : '€0.00',
+      contractsReady: contractsRead + ' of ' + deals.length,
+      srcHsOn: st.source === 'hubspot' ? 'true' : 'false',
+      srcSfOn: st.source === 'salesforce' ? 'true' : 'false',
+      srcHsBg: st.source === 'hubspot' ? '#FFFFFF' : 'transparent',
+      srcHsFg: st.source === 'hubspot' ? '#1D2730' : '#AEB8C2',
+      srcSfBg: st.source === 'salesforce' ? '#FFFFFF' : 'transparent',
+      srcSfFg: st.source === 'salesforce' ? '#1D2730' : '#AEB8C2',
+      pickHs: function () { self.pickSource('hubspot'); },
+      pickSf: function () { self.pickSource('salesforce'); },
+      syncing: st.syncing,
+      synced: !st.syncing,
+      syncShown: st.syncNote !== 'off',
+      syncOpacity: st.syncNote === 'on' ? '1' : '0',
+      syncLabel: st.syncing ? 'Syncing data…' : 'Up to date',
+      syncFg: st.syncing ? '#1D2730' : '#6B7782',
+      listNote: false,
+      listNoteText: '',
+      listScanLabel: queueActive ? 'Scanning…' : scanLabel(allReady.length),
+      listBg: (listCanScan || queueActive) ? '#1D2730' : '#AEB8C2',
+      listCursor: listCanScan ? 'pointer' : (queueActive ? 'progress' : 'not-allowed'),
+      listDisabled: !listCanScan,
+      listFill: listIcon.fill,
+      listAnimA: listIcon.animA,
+      listAnimB: listIcon.animB,
+      checkAll: function () { if (listCanScan) self.startScan(allReady); },
+      back: function () {
+        if (self._askTimer) clearTimeout(self._askTimer);
+        self.setState({ screen: 'list', asking: false });
+      },
+      d: d,
+      dIsReady: isReady,
+      dIsNoContract: d.kind === 'nocontract',
+      dIsFailed: d.kind === 'failed',
+      banner: false,
+      bannerText: '',
+      checkLabel: dealBusy ? 'Scanning…' : scanLabel(d.ready.length),
+      scanBg: (dealCanScan || dealBusy) ? '#1D2730' : '#AEB8C2',
+      scanCursor: dealCanScan ? 'pointer' : (dealBusy ? 'progress' : 'not-allowed'),
+      scanDisabled: !dealCanScan,
+      scanFill: scanIcon.fill,
+      scanAnimA: scanIcon.animA,
+      scanAnimB: scanIcon.animB,
+      checkNow: function () { if (dealCanScan) self.startScan(d.ready); },
+      tabs: tabs,
+      showInvoices: st.tab === 'invoices',
+      showAsk: st.tab === 'ask',
+      filters: filters,
+      rows: rows,
+      noRows: rows.length === 0,
+      sel: sel,
+      selIsMismatch: sel.status === 'mismatch',
+      selIsCompliant: sel.status === 'compliant',
+      selIsNoBasis: sel.status === 'nobasis',
+      selIsUnchecked: sel.status === 'ready',
+      selIsChecking: sel.status === 'scanning',
+      hasSel: hasSel,
+      invSearch: st.invSearch,
+      onInvSearch: function (e) { self.setState({ invSearch: e.target.value, page: 1, selected: '' }); },
+      noRowsText: invTerm ? 'No invoices match your search.' : 'No invoices with this status.',
+      hasPages: pageCount > 1,
+      pages: pages,
+      pageInfo: 'Showing ' + (pageStart + 1) + (rows.length > 1 ? '–' + (pageStart + rows.length) : '') + ' of ' + filtered.length,
+      prevDisabled: page <= 1,
+      prevColor: page <= 1 ? '#AEB8C2' : '#1D2730',
+      prevCursor: page <= 1 ? 'not-allowed' : 'pointer',
+      prevPage: function () { if (page > 1) self.setState({ page: page - 1, selected: '' }); },
+      nextDisabled: page >= pageCount,
+      nextColor: page >= pageCount ? '#AEB8C2' : '#1D2730',
+      nextCursor: page >= pageCount ? 'not-allowed' : 'pointer',
+      nextPage: function () { if (page < pageCount) self.setState({ page: page + 1, selected: '' }); },
+      samples: samples,
+      q: st.q,
+      asked: st.asked,
+      hasAnswer: st.asking || st.answer !== 'none',
+      asking: st.asking,
+      askLabel: st.asking ? 'Thinking' : 'Ask AI',
+      aiTagLabel: st.asking ? 'AI is thinking' : 'AI answer',
+      aiFill: askIcon.fill,
+      aiAnimA: askIcon.animA,
+      aiAnimB: askIcon.animB,
+      ansIndex: st.answer === 'index',
+      ansNotice: st.answer === 'notice',
+      ansUnknown: st.answer === 'unknown',
+      onQ: function (e) { self.setState({ q: e.target.value }); },
+      ask: function () {
+        var text = (self.getView().q || '').trim();
+        if (!text) return;
+        var hit = sampleDefs.filter(function (s) { return s.text.toLowerCase() === text.toLowerCase(); })[0];
+        startAsk(text, hit ? hit.key : 'unknown');
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

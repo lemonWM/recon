@@ -1,0 +1,14 @@
+# Recon services. n8n lives in /root/n8n and reaches them over the shared network.
+services:
+  recon-contract-reader:
+    build:
+      context: ./recon-contract-reader
+    container_name: recon_contract_reader
+    restart: unless-stopped
+    mem_limit: 256m
+    networks:
+      - shared
+
+networks:
+  shared:
+    external: true

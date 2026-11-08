@@ -1,0 +1,440 @@
+{
+  "name": "RECON - CONTRACT - READ",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        16,
+        0
+      ],
+      "id": "df40c8dc-2a39-4f64-8439-96669adc6d80",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select id, crm_id, file_path\nfrom contracts\nwhere status = 'attached'\n  and archived_at is null\n  and file_path is not null;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        224,
+        0
+      ],
+      "id": "b1534560-d8c8-488b-9f56-51afc5eb49d0",
+      "name": "Get contracts to read",
+      "credentials": {
+        "postgres": {
+          "id": "bpRSKpHaD3ZOYR1v",
+          "name": "RECON Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=  https://evuwwsctamuyktvcjtgl.supabase.co/storage/v1/object/contracts_files/{{ $json.file_path }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        656,
+        0
+      ],
+      "id": "cbebaaf0-f75c-4cb5-a118-4f4b7a4bc70d",
+      "name": "GET CONTRACT PDF - Storage",
+      "credentials": {
+        "supabaseApi": {
+          "id": "OHyVMG28ODwSWgFg",
+          "name": "RECON Files Storage"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://recon-contract-reader:3000/chunk",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/pdf"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        864,
+        0
+      ],
+      "id": "ff1eb1e8-6e69-4ca2-bf4d-f0dede838466",
+      "name": "CHUNK CONTRACT - Reader"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "with deleted as (\n\tdelete from contract_chunks\n\twhere contract_id = {{ $json.id }}\n\treturning 1\n)\nselect\n\t{{ $json.id }} as id,\n\t'{{ $json.file_path }}' as file_path,\n\t(select count(*) from deleted) as deleted_chunks;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        448,
+        0
+      ],
+      "id": "d05aa99f-d0cf-4ecb-873e-2f1bc6f82346",
+      "name": "DELETE OLD CHUNKS",
+      "credentials": {
+        "postgres": {
+          "id": "bpRSKpHaD3ZOYR1v",
+          "name": "RECON Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "chunks",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        0
+      ],
+      "id": "30cb96d7-7545-47c3-99d5-7d06bc98c598",
+      "name": "CHUNK CONTRACT - Reader1"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "contract_chunks",
+          "mode": "list",
+          "cachedResultName": "contract_chunks"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "contract_id": "={{ $('DELETE OLD CHUNKS').item.json.id }}",
+            "chunk_index": "={{ $json.chunk_index }}",
+            "page_start": "={{ $json.page_start }}",
+            "page_end": "={{ $json.page_end }}",
+            "part": "={{ $json.part }}",
+            "section_title": "={{ $json.section_title }}",
+            "clause_no": "={{ $json.clause_no }}",
+            "valid_from": "={{ $json.valid_from }}",
+            "text": "={{ $json.text }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contract_id",
+              "displayName": "contract_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "chunk_index",
+              "displayName": "chunk_index",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "part",
+              "displayName": "part",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "section_title",
+              "displayName": "section_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "clause_no",
+              "displayName": "clause_no",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "valid_from",
+              "displayName": "valid_from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_start",
+              "displayName": "page_start",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_end",
+              "displayName": "page_end",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "embedding",
+              "displayName": "embedding",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "embedding_model",
+              "displayName": "embedding_model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1312,
+        0
+      ],
+      "id": "67eec831-2b35-48e8-8da6-c491dc34cd6f",
+      "name": "INSERT CHUNKS",
+      "credentials": {
+        "postgres": {
+          "id": "bpRSKpHaD3ZOYR1v",
+          "name": "RECON Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "compare": "selectedFields",
+        "fieldsToCompare": "contract_id",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        0
+      ],
+      "id": "00995950-9d4f-4404-803e-3463eccd8387",
+      "name": "Remove Duplicates"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update contracts\nset status = 'read'\nwhere id = {{ $json.contract_id }}\n  and status = 'attached';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1728,
+        0
+      ],
+      "id": "08caad25-d4a6-434b-bb62-a0c010d67a4e",
+      "name": "SET CONTRACT READ",
+      "credentials": {
+        "postgres": {
+          "id": "bpRSKpHaD3ZOYR1v",
+          "name": "RECON Supabase"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get contracts to read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get contracts to read": {
+      "main": [
+        [
+          {
+            "node": "DELETE OLD CHUNKS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET CONTRACT PDF - Storage": {
+      "main": [
+        [
+          {
+            "node": "CHUNK CONTRACT - Reader",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CHUNK CONTRACT - Reader": {
+      "main": [
+        [
+          {
+            "node": "CHUNK CONTRACT - Reader1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DELETE OLD CHUNKS": {
+      "main": [
+        [
+          {
+            "node": "GET CONTRACT PDF - Storage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CHUNK CONTRACT - Reader1": {
+      "main": [
+        [
+          {
+            "node": "INSERT CHUNKS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "INSERT CHUNKS": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "SET CONTRACT READ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "1a2df367-f35d-4f7e-aa18-779a2270601d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2c89b6bb54cad1273faab153d3f9ef9a36e0904998c4434199279f4c948e41ba"
+  },
+  "nodeGroups": [],
+  "id": "qFkWpPoKXQC4jtn7",
+  "tags": []
+}

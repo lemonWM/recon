@@ -1,0 +1,52 @@
+// Animations shared by several components.
+
+// Logo star: turns around its vertical axis, like a coin.
+@keyframes rc-flip {
+	0% {
+		transform: scaleX(1);
+		animation-timing-function: cubic-bezier(0.47, 0, 0.74, 0.71);
+	}
+	50% {
+		transform: scaleX(0);
+		animation-timing-function: cubic-bezier(0.39, 0.58, 0.57, 1);
+	}
+	100% {
+		transform: scaleX(1);
+	}
+}
+
+// AI sparkles while waiting for a scan or an answer.
+@keyframes rc-pulse {
+	0%,
+	100% {
+		opacity: 0.3;
+		transform: scale(0.75);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.3);
+	}
+}
+
+// Sync icon: a gentler pulse than the AI sparkles.
+@keyframes rc-sync {
+	0%,
+	100% {
+		opacity: 0.55;
+		transform: scale(0.94);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.06);
+	}
+}
+
+// People who ask their system for less motion get none.
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation: none !important;
+		transition: none !important;
+	}
+}

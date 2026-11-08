@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+	<path d="M4.5 12a7.5 7.5 0 0 1 11.1-6.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+	<path d="M19.5 12a7.5 7.5 0 0 1-11.1 6.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+	<path class="logo-star" d="M12 7.4Q12.7 11.3 16.6 12 12.7 12.7 12 16.6 11.3 12.7 7.4 12 11.3 11.3 12 7.4Z" fill="#1f6fd6" />
+	<path d="M19.6 1.8Q20 4 22.2 4.4 20 4.8 19.6 7 19.2 4.8 17 4.4 19.2 4 19.6 1.8Z" fill="currentColor" />
+</svg>

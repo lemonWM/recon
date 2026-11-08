@@ -1,0 +1,87 @@
+// Page-wide basics: reset, font, background, links and focus.
+@use 'variables' as *;
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+	min-height: 100%;
+}
+
+body {
+	margin: 0;
+	background: $color-page;
+	color: $color-text;
+	font-family: $font-sans;
+	font-size: $font-size-base;
+	line-height: $line-height-base;
+	-webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p {
+	margin: 0;
+}
+
+button,
+input {
+	font: inherit;
+	color: inherit;
+}
+
+button {
+	cursor: pointer;
+}
+
+// Links are never underlined. Colour and weight make them stand out.
+a {
+	color: $color-link;
+	text-decoration: none;
+
+	&:hover {
+		color: $color-link-hover;
+	}
+}
+
+// Inputs show focus by border colour only.
+input:focus,
+input:focus-visible {
+	outline: none;
+	border-color: $color-focus-border;
+	box-shadow: none;
+}
+
+// Buttons and links show a ring for keyboard users.
+button:focus-visible,
+a:focus-visible {
+	outline: 2px solid $color-focus-ring;
+	outline-offset: 2px;
+}
+
+// Shared width for header, content and footer.
+.container {
+	width: 100%;
+	max-width: $container-width;
+	margin: 0 auto;
+	padding-left: $container-gutter;
+	padding-right: $container-gutter;
+}
+
+// White box with a thin border, used for every card on the page.
+.card {
+	overflow: hidden;
+	background: $color-surface;
+	border: 1px solid $color-border;
+	border-radius: $radius-card;
+}
+
+.mono {
+	font-family: $font-mono;
+}

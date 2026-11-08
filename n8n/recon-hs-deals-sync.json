@@ -1,0 +1,476 @@
+{
+  "name": "RECON - HS - DEALS - SYNC",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        144
+      ],
+      "id": "1a19b054-c735-470d-8b9f-ab01c930f1e9",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/collector/graphql",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"query\":\"query ReconDeals { CRM { deal_collection(filter: { deal_recon__eq: true }, limit: 100) { items { hs_object_id dealname deal_recon recon_contract_start_date recon_last_checked associations { company_collection__primary { items { hs_object_id name } } note_collection__deal_to_note { items { hs_object_id hs_attachment_ids hs_timestamp } } } } } } }\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        144
+      ],
+      "id": "9ada62b9-0d53-4b14-b269-c99f81bc7f0e",
+      "name": "GET DEALS  & CUSTOMERS - HubSpot",
+      "retryOnFail": true,
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "ltO4iFCD0Ynwd48g",
+          "name": "RECON HubSpot Service Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data.CRM.deal_collection.items",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        448,
+        144
+      ],
+      "id": "af61eacd-7459-4f29-bcba-c455bca10869",
+      "name": "DATA - Split Out"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "with c as (\n\tinsert into customers (crm_source, crm_id, name)\n\tvalues ('hubspot', $1::text, $2)\n\ton conflict (crm_source, crm_id) do update\n\t\tset name = excluded.name, updated_at = now()\n\treturning id\n)\ninsert into contracts (\n\tcustomer_id, crm_source, crm_id, name, crm_url, contract_start_date,\n\tfile_name, file_path, status\n)\nselect\n\tc.id, 'hubspot', $3::text, $4, $5,\n\tnullif(nullif($6::text, ''), 'null')::date,\n\tnullif(nullif($7::text, ''), 'null'),\n\tnullif(nullif($8::text, ''), 'null'),\n\t$9\nfrom c\non conflict (crm_source, crm_id) do update\n\tset name = excluded.name,\n\t\tcrm_url = excluded.crm_url,\n\t\tcontract_start_date = excluded.contract_start_date,\n\t\tfile_name = excluded.file_name,\n\t\tfile_path = excluded.file_path,\n\t\t-- A file that has not changed keeps whatever state the reading step left it in.\n\t\tstatus = case\n\t\t\twhen excluded.file_path is null then 'no_contract'\n\t\t\twhen contracts.file_path is distinct from excluded.file_path then 'attached'\n\t\t\telse contracts.status\n\t\tend,\n\t\tarchived_at = null,\n\t\tupdated_at = now()\nreturning crm_id, file_name, status;",
+        "options": {
+          "queryReplacement": "={{ $json.company_crm_id }},{{ $json.company_name }},{{ $json.deal_crm_id }},{{ $json.deal_name }},{{ $json.crm_url }},{{ $json.start_date }},{{ $json.file_name }},{{ $json.file_path }},{{ $json.status }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        2000,
+        144
+      ],
+      "id": "69f91666-58a8-4336-9921-579d203afae4",
+      "name": "DEALS & CUSTOMERS upsert to base",
+      "executeOnce": false,
+      "credentials": {
+        "postgres": {
+          "id": "bpRSKpHaD3ZOYR1v",
+          "name": "RECON Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "crm_id"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2208,
+        144
+      ],
+      "id": "6a93ecda-93c2-40b9-a165-a572942107fe",
+      "name": "DEALS Aggregate"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update contracts\nset archived_at = now(),\n\tupdated_at  = now()\nwhere crm_source = 'hubspot'\n\tand archived_at is null\n\tand crm_id <> all (string_to_array($1, ' '));",
+        "options": {
+          "queryReplacement": "={{ $json.crm_id.join(' ') }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        2416,
+        144
+      ],
+      "id": "2113d223-8d17-4a01-a7fb-329d9d4c1e02",
+      "name": "DEALS - archive missing",
+      "credentials": {
+        "postgres": {
+          "id": "bpRSKpHaD3ZOYR1v",
+          "name": "RECON Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "43848511-d107-4887-9f23-db3e67eb05c2",
+              "leftValue": "={{ $json.associations.note_collection__deal_to_note.items }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        144
+      ],
+      "id": "231fc14a-c1f6-402d-bc32-f537214cf6db",
+      "name": "HAS CONTRACT FILE"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"company_crm_id\": \"{{ $('DATA - Split Out').item.json.associations.company_collection__primary.items[0].hs_object_id }}\",\n  \"company_name\": \"{{ $('DATA - Split Out').item.json.associations.company_collection__primary.items[0].name }}\",\n  \"deal_crm_id\": \"{{ $('DATA - Split Out').item.json.hs_object_id }}\",\n  \"deal_name\": \"{{ $('DATA - Split Out').item.json.dealname }}\",\n  \"crm_url\": \"https://app-eu1.hubspot.com/contacts/149521488/record/0-3/{{ $('DATA - Split Out').item.json.hs_object_id }}\",\n  \"start_date\": \"{{ $('DATA - Split Out').item.json.recon_contract_start_date }}\",\n  \"file_name\": \"{{ $('GET DEAL FILES').item.json.name }}.{{ $('GET DEAL FILES').item.json.extension }}\",\n  \"file_path\": \"{{ $('DATA - Split Out').item.json.hs_object_id }}/{{ $('GET DEAL FILES').item.json.fileMd5 }}.pdf\",\n\"status\": \"attached\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1616,
+        -144
+      ],
+      "id": "8237d895-1362-4af0-bcf0-4300382b51f4",
+      "name": "DEAL + FILE"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"company_crm_id\": \"{{ $json.associations.company_collection__primary.items[0].hs_object_id }}\",\n  \"company_name\": \"{{ $json.associations.company_collection__primary.items[0].name }}\",\n  \"deal_crm_id\": \"{{ $json.hs_object_id }}\",\n  \"deal_name\": \"{{ $json.dealname }}\",\n  \"crm_url\": \"https://app-eu1.hubspot.com/contacts/149521488/record/0-3/{{ $json.hs_object_id }}\",\n  \"start_date\": \"{{ $json.recon_contract_start_date }}\",\n  \"file_name\": \"null\",\n  \"file_path\": \"null\",\n\"status\": \"no_contract\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1248,
+        160
+      ],
+      "id": "0594d838-9269-4a20-81fd-65153a022565",
+      "name": "DEAL - NO FILE"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1792,
+        144
+      ],
+      "id": "4370343b-92e0-4304-9bff-5d33a6c78c81",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hubapi.com/files/v3/files/{{ $json.associations.note_collection__deal_to_note.items.sort((a, b) => b.hs_timestamp - a.hs_timestamp)[0].hs_attachment_ids[0].value }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        864,
+        -144
+      ],
+      "id": "264a87d3-ed3e-4506-b817-8ad22170dcc1",
+      "name": "GET DEAL FILES",
+      "retryOnFail": true,
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "ltO4iFCD0Ynwd48g",
+          "name": "RECON HubSpot Service Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hubapi.com/files/v3/files/{{ $json.id }}/signed-url",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1056,
+        -144
+      ],
+      "id": "24e2eb7b-f8aa-420e-8ad5-0b40e44b0874",
+      "name": "GET CONTRACT PDF URL - HubSpot",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "ltO4iFCD0Ynwd48g",
+          "name": "RECON HubSpot Service Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1248,
+        -144
+      ],
+      "id": "e9b7f587-4662-42b5-96c3-4edee1dc46de",
+      "name": "GET CONTRACT PDF FILE"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evuwwsctamuyktvcjtgl.supabase.co/storage/v1/object/contracts_files/{{ $('DATA - Split Out').item.json.hs_object_id }}/{{ $('GET DEAL FILES').item.json.fileMd5 }}.pdf",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-upsert",
+              "value": "true"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/pdf"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1440,
+        -144
+      ],
+      "id": "2e7349eb-d79d-4c8c-affd-65f7484138e2",
+      "name": "UPLOAD CONTRACT PDF - Storage",
+      "credentials": {
+        "supabaseApi": {
+          "id": "OHyVMG28ODwSWgFg",
+          "name": "RECON Files Storage"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "GET DEALS  & CUSTOMERS - HubSpot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET DEALS  & CUSTOMERS - HubSpot": {
+      "main": [
+        [
+          {
+            "node": "DATA - Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DATA - Split Out": {
+      "main": [
+        [
+          {
+            "node": "HAS CONTRACT FILE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DEALS & CUSTOMERS upsert to base": {
+      "main": [
+        [
+          {
+            "node": "DEALS Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DEALS Aggregate": {
+      "main": [
+        [
+          {
+            "node": "DEALS - archive missing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HAS CONTRACT FILE": {
+      "main": [
+        [
+          {
+            "node": "GET DEAL FILES",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DEAL - NO FILE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DEAL - NO FILE": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "DEAL + FILE": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "DEALS & CUSTOMERS upsert to base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET DEAL FILES": {
+      "main": [
+        [
+          {
+            "node": "GET CONTRACT PDF URL - HubSpot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET CONTRACT PDF URL - HubSpot": {
+      "main": [
+        [
+          {
+            "node": "GET CONTRACT PDF FILE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET CONTRACT PDF FILE": {
+      "main": [
+        [
+          {
+            "node": "UPLOAD CONTRACT PDF - Storage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UPLOAD CONTRACT PDF - Storage": {
+      "main": [
+        [
+          {
+            "node": "DEAL + FILE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "559310e4-9240-4a79-99c8-f49b2c560977",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2c89b6bb54cad1273faab153d3f9ef9a36e0904998c4434199279f4c948e41ba"
+  },
+  "nodeGroups": [],
+  "id": "F5XGCRpuxehD479N",
+  "tags": []
+}
