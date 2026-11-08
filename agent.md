@@ -7,7 +7,11 @@ pytania i historię decyzji. Szczegóły obszarowe leżą w `agents/`.
 **Gdzie skończyliśmy 7.11 i od czego zacząć następną sesję:**
 - **Projekt przeniesiony na nowego Maca przez pendrive (7.11)**, dalej w `Desktop/recon`.
   Bez `node_modules` — przed lokalnym uruchomieniem `npm install` w danym podfolderze.
-  Repozytorium git dalej nie założone.
+  **Repozytorium git założone 8.11:** prywatne `github.com/lemonWM/recon`, gałąź `main`,
+  autor commitów ustawiony lokalnie na prywatny mail. Logowanie: classic token `repo`
+  zapisany w Pęku kluczy. Pułapka: wklejanie tokenu w ukryte pole „Password” przy
+  `git push` na tym Macu nie działa — token podawany przez `read -s T` i zapisywany
+  `git credential approve`.
 - **`RECON - CONTRACT - READ` działa end-to-end (7.11):** umowy `attached` → PDF ze
   Storage → czytnik → `contract_chunks` → status `read`. W bazie **137 fragmentów**,
   cztery umowy `read`, Kessler `no_contract`. Przetestowane: pierwszy odczyt, ponowny
@@ -17,9 +21,7 @@ pytania i historię decyzji. Szczegóły obszarowe leżą w `agents/`.
 - **Mikrus po restarcie (sprawdzone 7.11):** `n8n`, `recon_contract_reader`
   i `pagespeed_panel` wstały same. Czytnik bez wystawionego portu (`3000/tcp`).
   Logowanie: `ssh root@srv71.mikr.us -p 10295`.
-- **Do zrobienia przy okazji:** eksport JSON `SUPABASE - KEEPALIVE` do `n8n/` (`DEALS - SYNC` i `CONTRACT - READ`
-  wyeksportowane 7.11 do `n8n/recon-hs-deals-sync.json` i `n8n/recon-contract-read.json`), najlepiej
-  razem z założeniem gita;
+- **Do zrobienia przy okazji:** eksport JSON `SUPABASE - KEEPALIVE` do `n8n/` (`DEALS - SYNC` i `CONTRACT - READ` już są);
   decyzja o polu `section_no` (czytnik je zwraca, tabela nie ma).
 - **Następny krok:** embeddingi w Voyage (`voyage-4-lite`, `vector(1024)`) dla 137
   fragmentów — kolumny `embedding` i `embedding_model`.
