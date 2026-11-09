@@ -23,8 +23,13 @@ pytania i historię decyzji. Szczegóły obszarowe leżą w `agents/`.
   Logowanie: `ssh root@srv71.mikr.us -p 10295`.
 - **Do zrobienia przy okazji:** eksport JSON `SUPABASE - KEEPALIVE` do `n8n/` (`DEALS - SYNC` i `CONTRACT - READ` już są);
   decyzja o polu `section_no` (czytnik je zwraca, tabela nie ma).
-- **Następny krok:** embeddingi w Voyage (`voyage-4-lite`, `vector(1024)`) dla 137
-  fragmentów — kolumny `embedding` i `embedding_model`.
+- **Voyage podłączony (8.11):** projekt `recon` na dash.voyageai.com, credential w n8n
+  `RECON Voyage` (Header Auth, `Authorization: Bearer pa-…`). Bez karty: limity **3 zapytania
+  i 10 tys. tokenów na minutę** (sprawdzone — czwarte zapytanie w minucie odpada). Budget
+  Alert $1 to tylko mail, nie twarda blokada. Testy na żywo i wnioski w `agents/rag.md` (11a).
+- **Następny krok:** przepływ `RECON - CONTRACT - EMBED` — fragmenty bez `embedding` →
+  Voyage (`voyage-4-lite`, `input_type: document`) **paczką w jednym zapytaniu** (137
+  fragmentów ≈ 3,7 tys. tokenów) → zapis `embedding` i `embedding_model`.
 
 **Gdzie skończyliśmy 27.10 i od czego zacząć następną sesję:**
 - **Cięcie umów działa (27.10):** usługa `recon-contract-reader/` (Node, `pdfjs-dist`)
@@ -468,6 +473,12 @@ bez niej nie byłoby czego wpisać ani w post, ani w CV.
 ---
 
 ## 14. HISTORIA DECYZJI
+
+- **8.11.2026** — Voyage bez karty na start; karta dopiero, gdy limity zaczną przeszkadzać
+  przy pomiarach. Fragmenty wysyłane paczkami (wiele tekstów w jednym `input`), nie po
+  jednym zapytaniu na fragment.
+- **8.11.2026** — repozytorium git `lemonWM/recon` (prywatne) założone; pierwszy commit
+  ze stanem projektu, eksporty n8n w `n8n/`.
 
 - **7.11.2026** — upsert w `RECON - HS - DEALS - SYNC` dostaje parametry jako tablicę
   (`{{ [ ... ] }}` w Query Parameters) zamiast napisu z przecinkami. Powód: n8n tnie napis

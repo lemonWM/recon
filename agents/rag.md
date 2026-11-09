@@ -86,6 +86,32 @@ skala urosła.
 Samo porównanie w pgvector to zwykła matematyka (odległość kosinusowa, operator `<=>`),
 bez żadnego modelu. Inteligencja siedzi w modelu embeddingów, który rozmieścił punkty.
 
+**Testy na żywo 8.11** (`voyage-4-lite`, ręcznie w n8n):
+- Każde wejście — litera, słowo, zdanie, ~5 tys. tokenów — daje dokładnie 1024 liczby.
+  Wektory są znormalizowane (długość 1), więc podobieństwo kosinusowe = iloczyn skalarny.
+- Tokenizer: ok. **4,7 znaku na token** dla angielskiego tekstu umownego (24 tys. znaków →
+  5 074 tokeny). „okno” = 1 token, „1.1” = 3 tokeny.
+- **Bezwzględne wartości podobieństwa nic nie znaczą, liczy się ranking.** Krótkie,
+  niezwiązane słowa wychodziły 0,6–0,7 („okno”–„dupa” 0,71). Wniosek: **bez sztywnego
+  progu** typu „> 0,7 = trafienie”; bierzemy top-k i ustalamy k pomiarem.
+- **Sens ponad językami:** „Opłaty rosną co roku o 3%” – „Fees increase by 3% each year”
+  = 0,88, wyżej niż dwa angielskie sformułowania między sobą (0,81); poufność i inne
+  tematy 0,27–0,46.
+- **Długi tekst = rozmyty wektor:** ~5 tys. tokenów zdań umownych wyszło 0,41–0,53 do
+  wszystkiego, bez wyraźnego dopasowania. Potwierdza cięcie po klauzulach.
+- **Liczby i numery są dla embeddingów nierozróżnialne** („1.1” – „1” = 0,91). Kwoty
+  porównuje kod; szukanie po numerze klauzuli — wyszukiwanie tekstowe (kandydat na
+  hybrid search przy pomiarach).
+- Embedding nie jest anonimizacją (istnieją metody odtwarzania tekstu z wektora) —
+  wektory umów chronić jak same umowy.
+
+**Pomysł do pomiarów (8.11): lokalny model embeddingów** zamiast / obok Voyage — otwarty
+model (np. rodziny BGE, E5, Qwen Embedding) jako usługa w Dockerze na Mikrusie, wołana przez
+n8n. Za: dane nie wychodzą z serwera, brak limitów i kosztów API, gotowe porównanie do CV.
+Przeciw: 2 GB RAM na Mikrusie (n8n ~500 MB, czytnik 256 MB), inne wymiary (często 384/768)
+→ osobna kolumna lub tabela, zwykle niższa jakość (do zmierzenia), więcej utrzymania.
+Kierunek Arta: ciekawy, do przemyślenia przy domykaniu części inżynierskiej.
+
 ---
 
 
